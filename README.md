@@ -1,6 +1,6 @@
 ![example workflow](https://github.com/haus2100/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
-### Проект доступен по адресу: http://
+### Проект доступен по адресу: http://130.193.43.140
 
 
 
