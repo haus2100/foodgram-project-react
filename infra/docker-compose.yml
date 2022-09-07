@@ -19,7 +19,7 @@ services:
       - ./.env
   
   frontend:
-    image: haus2100/foodgram
+    image: haus2100/foodgram_frontend
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
