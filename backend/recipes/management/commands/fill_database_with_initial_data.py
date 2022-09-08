@@ -22,16 +22,16 @@ class Command(BaseCommand):
                 )
 
         author_pavel = User.objects.create(
-            username="pavelpatsey",
-            first_name="Павел",
-            last_name="Пацей",
-            email="pavelpatsey@mail.ru",
+            username="sam",
+            first_name="Александр",
+            last_name="Соловьев",
+            email="sam@mail.ru",
         )
         author_lena = User.objects.create(
-            username="lenaarhipova",
-            first_name="Лена",
-            last_name="Архипова",
-            email="lenaarhipova@mail.ru",
+            username="pva",
+            first_name="Вера",
+            last_name="Пикалова",
+            email="pva@mail.ru",
         )
 
         tag_breakfast = Tag.objects.create(
@@ -46,7 +46,6 @@ class Command(BaseCommand):
         )
         tag_hot_snack = Tag.objects.create(
             name="Горячие закуски",
-            # color="#d24508",
             color="#ba6700",
             slug="hot_snack",
         )
@@ -62,8 +61,6 @@ class Command(BaseCommand):
         )
         tag_main_course = Tag.objects.create(
             name="Основные блюда",
-            # color="#bf9000",
-            # color="#bc4105",
             color="#ff7f7f",
             slug="main_course",
         )
