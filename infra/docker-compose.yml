@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 services:
   db:
     image: postgres:13.0-alpine
@@ -7,19 +7,9 @@ services:
     env_file:
       - ./.env
   
-  backend:
-    image: haus2100/foodgram
-    restart: always
-    volumes:
-      - static_value:/app/static/
-      - media_value:/app/media/
-    depends_on:
-      - db
-    env_file:
-      - ./.env
-  
   frontend:
-    image: haus2100/foodgram_frontend
+    image: pavelpatsey/foodgram_frontend
+    restart: always
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
@@ -32,9 +22,27 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - ./docs/:/usr/share/nginx/html/api/docs/
       - static_value:/var/html/static/
       - media_value:/var/html/media/
+    restart: always
+    depends_on:
+      - frontend
+  
+  backend:
+    image: pavelpatsey/foodgram_backend
+    restart: always
+    volumes:
+      - static_value:/app_backend/static/
+      - media_value:/app_backend/media/
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             gunicorn foodgram.wsgi:application --bind 0:8000"
 
 volumes:
   static_value:
