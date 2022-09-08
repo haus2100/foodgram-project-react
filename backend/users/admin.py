@@ -1,18 +1,12 @@
 from django.contrib import admin
 
-from users.models import Subscribe, User
+from .models import Subscription
 
 
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'username', 'email',
-        'first_name', 'last_name', 'date_joined'
+        "pk",
+        "user",
+        "author",
     )
-    list_filter = ('email', 'first_name')
-    empty_value_display = '-пусто-'
-
-
-@admin.register(Subscribe)
-class SubscribeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'author')
