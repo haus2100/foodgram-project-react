@@ -216,11 +216,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             IngredientAmount(
                 recipe=recipe,
                 ingredient=get_object_or_404(
-                    Ingredient, id=ing_data["id"]
+                    Ingredient, id=ingredients_data["id"]
                 ),
-                amount=ing_data["amount"],
+                amount=ingredients_data["amount"],
             )
-            for ing_data in ingredients_data
+            for ingredients_data in ingredients_data
         ]
         return amounts
 
