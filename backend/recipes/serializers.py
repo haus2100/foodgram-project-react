@@ -1,5 +1,6 @@
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 
 from users.serializers import CustomUserSerializer
 
@@ -144,36 +145,84 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
-        recipe.tags.set(tags_data)
-        ingredient_amounts = []
-        for item in ingredients_data:
-            ingredient = item.get("ingredient")
-            amount = item.get("amount")
-            ingredient_amount, _ = IngredientAmount.objects.bulk_create(
-                ingredient=ingredient,
-                amount=amount,
+    def validate(self, data):
+        ingredients = data['ingredients']
+        ingredients_list = []
+        for ingredient in ingredients:
+            ingredient_id = ingredient['id']
+            if ingredient_id in ingredients_list:
+                raise serializers.ValidationError(
+                    {'ingredients': 'Только уникальные ингредиенты'}
+                )
+            ingredients_list.append(ingredient_id)
+            amount = ingredient['amount']
+            if int(amount) <= 0:
+                raise serializers.ValidationError(
+                    {'amount': 'Должен быть хотя-бы один ингредиент'}
+                )
+
+        tags = data['tags']
+        if not tags:
+            raise serializers.ValidationError(
+                {'tags': 'Нужно указать минимум один тег'}
             )
-            ingredient_amounts.append(ingredient_amount)
-        recipe.ingredients.set(ingredient_amounts)
-        return recipe
+        tags_list = []
+        for tag in tags:
+            if tag in tags_list:
+                raise serializers.ValidationError(
+                    {'tags': 'Теги должны быть уникальны'}
+                )
+            tags_list.append(tag)
+
+        cooking_time = data['cooking_time']
+        if int(cooking_time) <= 0:
+            raise serializers.ValidationError(
+                {'cooking_time': 'Время приготовление больше 0'}
+            )
+        return data
 
     def create(self, validated_data):
         tags_data = validated_data.pop("tags")
         ingredients_data = validated_data.pop("ingredients")
         recipe = Recipe.objects.create(**validated_data)
-        return self._add_tags_and_ingredients(
-            recipe, tags_data, ingredients_data
-        )
+        amounts = self.get_amounts(recipe, ingredients_data)
+        IngredientAmount.objects.bulk_create(amounts)
+        for data in tags_data:
+            tag = get_object_or_404(Tag, id=data.id)
+            recipe.tags.add(tag)
+        recipe.save()
+        return recipe
 
     def update(self, instance, validated_data):
-        instance.ingredients.clear()
-        instance.tags.clear()
         tags_data = validated_data.pop("tags")
         ingredients_data = validated_data.pop("ingredients")
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return self._add_tags_and_ingredients(
-            instance, tags_data, ingredients_data
-        )
+        instance = super().update(instance, validated_data)
+        instance.ingredients.clear()
+        instance.tags.clear()
+        amounts = self.get_amounts(instance, ingredients_data)
+        IngredientAmount.objects.bulk_create(amounts)
+        tags_data = validated_data.pop("tags")
+        ingredients_data = validated_data.pop("ingredients")
+        tags = []
+        for data in tags_data:
+            tag = get_object_or_404(Tag, id=data.id)
+            tags.append(tag)
+        instance.tags.set(tags)
+
+        return instance
+
+    def get_amounts(self, recipe, ingredients_data):
+        amounts = [
+            IngredientAmount(
+                recipe=recipe,
+                ingredient=get_object_or_404(
+                    Ingredient, id=ing_data["id"]
+                ),
+                amount=ing_data["amount"],
+            )
+            for ing_data in ingredients_data
+        ]
+        return amounts
+
+    def to_representation(self, instance):
+        return RecipeWriteSerializer(instance, context=self.context).data
