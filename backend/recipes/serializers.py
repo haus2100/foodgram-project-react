@@ -150,7 +150,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         for item in ingredients_data:
             ingredient = item.get("ingredient")
             amount = item.get("amount")
-            ingredient_amount, _ = IngredientAmount.objects.get_or_create(
+            ingredient_amount, _ = IngredientAmount.objects.bulk_create(
                 ingredient=ingredient,
                 amount=amount,
             )
