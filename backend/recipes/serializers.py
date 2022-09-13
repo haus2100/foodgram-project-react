@@ -127,6 +127,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     ingredients = IngredientAmountWriteSerializer(
         many=True,
     )
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all(),
@@ -150,12 +151,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ingredients = data['ingredients']
         ingredients_list = []
         for ingredient in ingredients:
-            ingredient_pk = ingredient['pk']
-            if ingredient_pk in ingredients_list:
+            ingredient_id = ingredient['id']
+            if ingredient_id in ingredients_list:
                 raise serializers.ValidationError(
                     {'ingredients': 'Только уникальные ингредиенты'}
                 )
-            ingredients_list.append(ingredient_pk)
+            ingredients_list.append(ingredient_id)
             amount = ingredient['amount']
             if int(amount) <= 0:
                 raise serializers.ValidationError(
