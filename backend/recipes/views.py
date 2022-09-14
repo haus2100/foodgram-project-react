@@ -1,5 +1,6 @@
 import copy
 
+from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -162,24 +163,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             "amount",
         )
 
-        ingredient_dict = {}
-        for ingredient in ingredient_queryset:
-            if ingredient[0] in ingredient_dict:
-                ingredient_dict[ingredient[0]][2] += ingredient[3]
-            ingredient_dict[ingredient[0]] = [
-                ingredient[1],
-                ingredient[2],
-                ingredient[3],
-            ]
-
-        shopping_cart_text = ""
-        for ingredient in ingredient_dict:
-            shopping_cart_text += (
-                f"{ingredient_dict[ingredient][0]} "
-                f"({ingredient_dict[ingredient][1]}) - "
-                f"{ingredient_dict[ingredient][2]} \n"
+        shopping_cart = (
+            IngredientAmount.objects.filter(rc=ingredient_queryset)
+            .values(
+                "ingredient__name", "ingredient__measurement_unit"
             )
-        return HttpResponse(
-            shopping_cart_text,
-            content_type="text/plain; charset=utf8",
+            .annotate(amount=Sum("amount"))
         )
+
+        shopping_cart_text = self.create_pdf(shopping_cart)
+        response = HttpResponse(shopping_cart_text, content_type="application/pdf")
+        content_disposition = 'attachment; filename="list.pdf"'
+        response["Content-Disposition"] = content_disposition
+        return response
