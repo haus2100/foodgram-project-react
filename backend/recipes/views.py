@@ -163,6 +163,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient__measurement_unit',
             'ingredient_amount'
         )
+        shopping_cart_text = ""
         for ingredient in ingredients:
             shopping_cart_text += (
                 f"{ingredient_dict[ingredient][0]} "
