@@ -3,7 +3,6 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.models import Recipe
-
 from .models import User
 
 
@@ -93,4 +92,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
         )
 
     def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj).count()
+        recipes_count = serializers.ReadOnlyField(
+            source='recipes.count'
+        )
+        return recipes_count
