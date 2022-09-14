@@ -120,35 +120,6 @@ class Recipe(models.Model):
         return f"{self.name}"
 
 
-class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name="Рецепт",
-    )
-    ingredient = models.ForeignKey(
-        Ingredient,
-        on_delete=models.CASCADE,
-        verbose_name="Ингредиент",
-    )
-    amount = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name="Количество"
-    )
-
-    class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=("recipe", "ingredient",),
-                name="recipe_ingredient_exists"),
-            models.CheckConstraint(
-                check=models.Q(amount__gt=0),
-                name="amount_gt_0"),
-        )
-        verbose_name = "Ингредиент в рецепте"
-        verbose_name_plural = "Ингредиенты в рецепте"
-
-
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
