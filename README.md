@@ -44,7 +44,7 @@ scp infra/nginx.conf <username>@<ip host>:/home/<username>/nginx.conf
 ```
 * Скопируйте папку docs на сервер:
 ```
-scp -r docs <username>@<ip host>@130.193.41.48:/home/<username>/
+scp -r docs <username>@<ip host>@130.193.43.140:/home/<username>/
 ```
 
 * Для работы с Workflow добавьте в Secrets GitHub переменные окружения для работы:
