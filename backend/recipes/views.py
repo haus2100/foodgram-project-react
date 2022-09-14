@@ -9,7 +9,7 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
+from .models import (Favorite, Ingredient, Recipe,
                      RecipeIngredient, ShoppingCart, Tag)
 from .pagination import RecipePagination
 from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
