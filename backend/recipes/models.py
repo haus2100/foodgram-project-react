@@ -64,6 +64,12 @@ class Ingredient(models.Model):
 
 
 class IngredientAmount(models.Model):
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='amounts',
+        verbose_name=_('Рецепт'),
+    )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
