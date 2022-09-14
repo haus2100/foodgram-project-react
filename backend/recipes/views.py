@@ -164,7 +164,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient_amount'
         )
         for ingredient in ingredients:
-            hopping_cart_text += (
+            shopping_cart_text += (
                 f"{ingredient_dict[ingredient][0]} "
                 f"({ingredient_dict[ingredient][1]}) - "
                 f"{ingredient_dict[ingredient][2]} \n"
