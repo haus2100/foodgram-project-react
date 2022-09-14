@@ -9,8 +9,8 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from .models import (Favorite, Ingredient, Recipe,
-                     RecipeIngredient, ShoppingCart, Tag)
+from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
+                     ShoppingCart, Tag)
 from .pagination import RecipePagination
 from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
@@ -154,13 +154,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
-        ingredients = RecipeIngredient.objects.filter(
-            recipe__carts__user=request.user).values(
-                'ingredient__name',
-                'ingredient__measurement_unit'
-        ).annotate(Sum('amount'))
+        user = request.user
+        ingredient_queryset = IngredientAmount.objects.filter(
+            recipes__shoppingcart__user=user
+        ).values_list(
+            "ingredient",
+            "ingredient__name",
+            "ingredient__measurement_unit",
+            "amount",
+        )
 
+        ingredient_dict = {}
+        for ingredient in ingredient_queryset:
+            if ingredient[0] in ingredient_dict:
+                ingredient_dict[ingredient[0]][2] += ingredient[3]
+            ingredient_dict[ingredient[0]] = [
+                ingredient[1],
+                ingredient[2],
+                ingredient[3],
+            ]
+
+        shopping_cart_text = ""
+        for ingredient in ingredient_dict:
+            shopping_cart_text += (
+                f"{ingredient_dict[ingredient][0]} "
+                f"({ingredient_dict[ingredient][1]}) - "
+                f"{ingredient_dict[ingredient][2]} \n"
+            )
         return HttpResponse(
-            create_shopping_list(ingredients),
-            content_type='text/plain'
+            shopping_cart_text,
+            content_type="text/plain; charset=utf8",
         )
