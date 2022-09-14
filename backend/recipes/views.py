@@ -16,7 +16,6 @@ from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShortRecipeSerializer,
                           TagSerializer)
-from .utils import create_shopping_list
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -154,19 +153,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
+        ingredient_dict = {}
         ingredients = IngredientAmount.objects.filter(
-            recipe__carts__user=request.user).values(
-                'ingredient__name',
-                'ingredient__measurement_unit'
-        ).annotate(Sum('amount'))
-
-        if not ingredients:
-            return Response(
-                {'error': 'Ваша корзина пуста'},
-                status=status.HTTP_400_BAD_REQUEST
+            recipe__shopping_cart__user=request.user
+        ).values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(ingredient_amount=Sum('amount')).values_list(
+            'ingredient__name',
+            'ingredient__measurement_unit',
+            'ingredient_amount'
+        )
+        for ingredient in ingredients:
+            ingredient_dict[ingredient[0]] = (ingredient[1], ingredient[2])
+        shopping_list = '\n'.join(
+            [f"- {item}: {value[1]} {value[0]}"
+             for item, value in ingredient_dict.items()]
+        )
+        response = HttpResponse(shopping_list, 'Content-Type: text/plain')
+        response['Content-Disposition'] = ('attachment; filename='
+                                           '"shopping_list.txt"')
+        return response
+                f"{ingredient_dict[ingredient][2]} \n"
             )
-
         return HttpResponse(
-            create_shopping_list(ingredients),
-            content_type='text/plain'
+            shopping_cart_text,
+            content_type="text/plain; charset=utf8",
         )
