@@ -1,11 +1,9 @@
-FROM python:3.7-slim
+FROM python:3.8-slim
 
-WORKDIR /app
+WORKDIR /app_backend
 
-COPY ../.. .
-
-RUN python -m pip install --upgrade pip
+COPY requirements.txt
 
 RUN pip3 install -r requirements.txt --no-cache-dir
 
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0:8000"]
+COPY ./ /app_backend
