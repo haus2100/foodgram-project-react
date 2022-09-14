@@ -164,12 +164,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient_amount'
         )
         for ingredient in ingredients:
-            ingredient_dict[ingredient[0]] = (ingredient[1], ingredient[2])
-        shopping_list = '\n'.join(
-            [f"- {item}: {value[1]} {value[0]}"
-             for item, value in ingredient_dict.items()]
+            hopping_cart_text += (
+                f"{ingredient_dict[ingredient][0]} "
+                f"({ingredient_dict[ingredient][1]}) - "
+                f"{ingredient_dict[ingredient][2]} \n"
+            )
+        return HttpResponse(
+            shopping_cart_text,
+            content_type="text/plain; charset=utf8",
         )
-        response = HttpResponse(shopping_list, 'Content-Type: text/plain')
-        response['Content-Disposition'] = ('attachment; filename='
-                                           '"shopping_list.txt"')
-        return response
