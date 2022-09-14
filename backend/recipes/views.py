@@ -1,5 +1,6 @@
 import copy
 
+from django.db.models import F, Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -152,34 +153,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
-        user = request.user
-        ingredient_queryset = IngredientAmount.objects.filter(
-            recipes__shoppingcart__user=user
-        ).values_list(
-            "ingredient",
-            "ingredient__name",
-            "ingredient__measurement_unit",
-            "amount",
-        )
-
-        ingredient_dict = {}
-        for ingredient in ingredient_queryset:
-            if ingredient[0] in ingredient_dict:
-                ingredient_dict[ingredient[0]][2] += ingredient[3]
-            ingredient_dict[ingredient[0]] = [
-                ingredient[1],
-                ingredient[2],
-                ingredient[3],
-            ]
-
-        shopping_cart_text = ""
-        for ingredient in ingredient_dict:
-            shopping_cart_text += (
-                f"{ingredient_dict[ingredient][0]} "
-                f"({ingredient_dict[ingredient][1]}) - "
-                f"{ingredient_dict[ingredient][2]} \n"
+        if not self.get_user.carts.exists():
+            return Response('Корзина пуста', status=status.HTTP_400_BAD_REQUEST)
+        name = f'{self.get_user}_shopping_list'
+        ingredients = IngredientAmount.objects.filter(
+            recipe__carts__user=self.get_user
+        ).values(
+            ingredient_in=F('ingredient__name'),
+            measure=F('ingredient__measurement_unit')
+        ).annotate(amount=Sum('amount'))
+        shopping_list = (f'Список покупок:{self.get_user}`a\n',)
+        for ing in ingredients:
+            shopping_list += (
+                f'{ing["ingredient_in"]}: {ing["amount"]} {ing["measure"]}\n',
             )
-        return HttpResponse(
-            shopping_cart_text,
-            content_type="text/plain; charset=utf8",
+        response = HttpResponse(
+            shopping_list,
+            content_type='text.txt; charset=utf-8'
         )
+        response['Content-Disposition'] = f'attachment; filename={name}'
+        return response
