@@ -1,6 +1,5 @@
 import copy
 
-from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -16,7 +15,6 @@ from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShortRecipeSerializer,
                           TagSerializer)
-from .utils import shopping_cart_text
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -155,16 +153,33 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         user = request.user
-        ingredients = IngredientAmount.objects.filter(
+        ingredient_queryset = IngredientAmount.objects.filter(
             recipes__shoppingcart__user=user
         ).values_list(
             "ingredient",
             "ingredient__name",
             "ingredient__measurement_unit",
             "amount",
-        ).annotate(Sum("amount"))
+        )
 
+        ingredient_dict = {}
+        for ingredient in ingredient_queryset:
+            if ingredient[0] in ingredient_dict:
+                ingredient_dict[ingredient[0]][2] += ingredient[3]
+            ingredient_dict[ingredient[0]] = [
+                ingredient[1],
+                ingredient[2],
+                ingredient[3],
+            ]
+
+        shopping_cart_text = ""
+        for ingredient in ingredient_dict:
+            shopping_cart_text += (
+                f"{ingredient_dict[ingredient][0]} "
+                f"({ingredient_dict[ingredient][1]}) - "
+                f"{ingredient_dict[ingredient][2]} \n"
+            )
         return HttpResponse(
-            shopping_cart_text(ingredients),
+            shopping_cart_text,
             content_type="text/plain; charset=utf8",
         )
