@@ -145,8 +145,8 @@ class RecipeIngredient(models.Model):
                 check=models.Q(amount__gt=0),
                 name="amount_gt_0"),
         )
-        verbose_name ="Ингредиент в рецепте"
-        verbose_name_plural ="Ингредиенты в рецепте"
+        verbose_name = "Ингредиент в рецепте"
+        verbose_name_plural = "Ингредиенты в рецепте"
 
 
 class Favorite(models.Model):
