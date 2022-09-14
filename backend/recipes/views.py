@@ -171,8 +171,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .annotate(amount=Sum("amount"))
         )
 
-        shopping_cart_text = self.create_pdf(shopping_cart)
-        response = HttpResponse(shopping_cart_text, content_type="application/pdf")
+        sc_text = self.create_pdf(shopping_cart)
+        response = HttpResponse(sc_text, content_type="application/pdf")
         content_disposition = 'attachment; filename="list.pdf"'
         response["Content-Disposition"] = content_disposition
         return response
