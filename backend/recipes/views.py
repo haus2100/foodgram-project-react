@@ -1,6 +1,5 @@
 import copy
 
-from django.db.models import Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -16,7 +15,6 @@ from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShortRecipeSerializer,
                           TagSerializer)
-from .utils import create_shopping_list
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
