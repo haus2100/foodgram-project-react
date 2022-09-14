@@ -159,9 +159,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(ingredient_amount=Sum('amount')).values_list(
+            'ingredient',
             'ingredient__name',
             'ingredient__measurement_unit',
-            'ingredient_amount'
+            'amount'
         )
         shopping_cart_text = ""
         for ingredient in ingredients:
