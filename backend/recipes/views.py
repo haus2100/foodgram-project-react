@@ -167,7 +167,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         response = HttpResponse(
             shopping_list,
-            content_type='text.txt; charset=utf-8'
+            content_type="text/plain; charset=utf8"
         )
         response['Content-Disposition'] = f'attachment; filename={name}'
         return response
