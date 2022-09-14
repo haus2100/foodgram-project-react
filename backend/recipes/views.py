@@ -163,15 +163,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
             "amount",
         )
 
-        shopping_cart = (
-            IngredientAmount.objects.filter(rc=ingredient_queryset)
-            .values(
-                "ingredient__name", "ingredient__measurement_unit"
-            )
-            .annotate(amount=Sum("amount"))
-        )
+        ingredient_dict = {}
+        for ingredient in ingredient_queryset:
+            if ingredient[0] in ingredient_dict:
+                ingredient_dict[ingredient[0]][2] += ingredient[3]
+            ingredient_dict[ingredient[0]] = [
+                ingredient[1],
+                ingredient[2],
+                ingredient[3],
+            ]
 
-        shopping_cart_text = self.create_pdf(shopping_cart)
+        shopping_cart_text = ""
+        for ingredient in ingredient_dict:
+            shopping_cart_text += (
+                f"{ingredient_dict[ingredient][0]} "
+                f"({ingredient_dict[ingredient][1]}) - "
+                f"{ingredient_dict[ingredient][2]} \n"
+            )
         return HttpResponse(
             shopping_cart_text,
             content_type="text/plain; charset=utf8",
