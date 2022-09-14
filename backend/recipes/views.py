@@ -10,12 +10,13 @@ from rest_framework.response import Response
 
 from .filters import IngredientSearchFilter, RecipeFilter
 from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                     ShoppingCart, Tag)
+                     RecipeIngredient, ShoppingCart, Tag)
 from .pagination import RecipePagination
 from .permissions import IsAuthorOrAdminOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShortRecipeSerializer,
                           TagSerializer)
+from .utils import create_shopping_list
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -153,25 +154,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
-        ingredient_dict = {}
-        ingredients = IngredientAmount.objects.filter(
-            recipe__shopping_cart__user=request.user
-        ).values(
-            'ingredient__name', 'ingredient__measurement_unit'
-        ).annotate(ingredient_amount=Sum('amount')).values_list(
-            'ingredient',
-            'ingredient__name',
-            'ingredient__measurement_unit',
-            'amount'
-        )
-        shopping_cart_text = ""
-        for ingredient in ingredients:
-            shopping_cart_text += (
-                f"{ingredient_dict[ingredient][0]} "
-                f"({ingredient_dict[ingredient][1]}) - "
-                f"{ingredient_dict[ingredient][2]} \n"
-            )
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__carts__user=request.user).values(
+                'ingredient__name',
+                'ingredient__measurement_unit'
+        ).annotate(Sum('amount'))
+
         return HttpResponse(
-            shopping_cart_text,
-            content_type="text/plain; charset=utf8",
+            create_shopping_list(ingredients),
+            content_type='text/plain'
         )
