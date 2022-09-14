@@ -2,7 +2,6 @@ import copy
 
 from django.db.models import F, Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -154,10 +153,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
-        if not self.get_user.carts.exists():
-            return Response(
-              'Корзина пуста', status=status.HTTP_400_BAD_REQUEST
-            )
         name = f'{self.get_user}_shopping_list'
         ingredients = IngredientAmount.objects.filter(
             recipe__carts__user=self.get_user
