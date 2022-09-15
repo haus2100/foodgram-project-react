@@ -143,40 +143,29 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+
     def validate(self, data):
-        ingredients = data['ingredients']
-        ingredients_list = []
-        for ingredient in ingredients:
-            ingredient_id = ingredient['id']
-            if ingredient_id in ingredients_list:
-                raise serializers.ValidationError(
-                    {'ingredients': 'Только уникальные ингредиенты'}
-                )
-            ingredients_list.append(ingredient_id)
-            amount = ingredient['amount']
-            if int(amount) <= 0:
-                raise serializers.ValidationError(
-                    {'amount': 'Должен быть хотя-бы один ингредиент'}
-                )
-
-        tags = data['tags']
-        if not tags:
+        if data['cooking_time'] < 1:
+            raise serializers.ValidationError("Время приготовление")
+        if len(data['tags']) == 0:
             raise serializers.ValidationError(
-                {'tags': 'Нужно указать минимум один тег'}
+                "Должен быть хотя-бы один ингредиент"
             )
-        tags_list = []
-        for tag in tags:
-            if tag in tags_list:
-                raise serializers.ValidationError(
-                    {'tags': 'Теги должны быть уникальны'}
-                )
-            tags_list.append(tag)
-
-        cooking_time = data['cooking_time']
-        if int(cooking_time) <= 0:
+        if len(data['tags']) > len(set(data['tags'])):
+            raise serializers.ValidationError("Теги должны быть уникальны")
+        if len(data['ingredients']) == 0:
             raise serializers.ValidationError(
-                {'cooking_time': 'Время приготовление больше 0'}
+                "Должен быть хотя-бы один ингредиент"
             )
+        id_ingredients = []
+        for ingredient in data['ingredients']:
+            if ingredient['amount'] < 1:
+                raise serializers.ValidationError(
+                    "оличество ингредиента не может быть меньше 1"
+                )
+            id_ingredients.append(ingredient['id'])
+        if len(id_ingredients) > len(set(id_ingredients)):
+            raise serializers.ValidationError("Только уникальные ингредиенты")
         return data
 
     def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
