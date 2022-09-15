@@ -144,36 +144,33 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
-        recipe.tags.set(tags_data)
-        ingredient_amounts = []
-        for item in ingredients_data:
-            ingredient = item.get("ingredient")
-            amount = item.get("amount")
-            ingredient_amount, _ = IngredientAmount.objects.get_or_create(
-                ingredient=ingredient,
-                amount=amount,
-            )
-            ingredient_amounts.append(ingredient_amount)
-        IngredientAmount.objects.bulk_create(ingredient_amounts)
+    def add_tags_and_ingredients(self, tags_data, ingredients, recipe):
+        for tag_data in tags_data:
+            recipe.tags.add(tag_data)
+        ingredient_list = []
+        for ingredient in ingredients:
+            new_ingredient = IngredientAmount(
+                recipe=recipe,
+                ingredient_id=ingredient['ingredient']['id'],
+                amount=ingredient['amount']
+                )
+            ingredient_list.append(new_ingredient)
+        IngredientAmount.objects.bulk_create(ingredient_list)
         return recipe
 
     def create(self, validated_data):
-        tags_data = validated_data.pop("tags")
-        ingredients_data = validated_data.pop("ingredients")
+        tags_data = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredientamount')
         recipe = Recipe.objects.create(**validated_data)
-        return self._add_tags_and_ingredients(
-            recipe, tags_data, ingredients_data
-        )
+        self.add_tags_and_ingredients(tags_data, ingredients, recipe)
+        return recipe
 
     def update(self, instance, validated_data):
-        instance.ingredients.clear()
-        instance.tags.clear()
-        tags_data = validated_data.pop("tags")
-        ingredients_data = validated_data.pop("ingredients")
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return self._add_tags_and_ingredients(
-            instance, tags_data, ingredients_data
-        )
+        tags_data = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredientamount')
+        TagRecipe.objects.filter(recipe=instance).delete()
+        IngredientAmount.objects.filter(recipe=instance).delete()
+        instance = self.add_tags_and_ingredients(
+            tags_data, ingredients, instance)
+        super().update(instance, validated_data)
+        return instance
