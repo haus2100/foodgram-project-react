@@ -135,64 +135,50 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'author', 'name', 'image', 'text',
-                  'ingredients', 'tags', 'cooking_time',
-                  'is_in_shopping_cart', 'is_favorited')
+        fields = (
+            "ingredients",
+            "tags",
+            "image",
+            "name",
+            "text",
+            "cooking_time",
+        )
 
-    def validate_ingredients(self, value):
-        ingredients_list = []
-        ingredients = value
-        for ingredient in ingredients:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    'Количество должно быть равным или больше 1!')
-            id_to_check = ingredient['ingredient']['id']
-            ingredient_to_check = Ingredient.objects.filter(id=id_to_check)
-            if not ingredient_to_check.exists():
-                raise serializers.ValidationError(
-                    'Данного продукта нет в базе!')
-            if ingredient_to_check in ingredients_list:
-                raise serializers.ValidationError(
-                    'Эти продукты уже были в рецепте!')
-            ingredients_list.append(ingredient_to_check)
-        return value
-
-    def add_tags_and_ingredients(self, tags_data, ingredients, recipe):
-        for tag_data in tags_data:
-            recipe.tags.add(tag_data)
-            recipe.save()
-        data = [IngredientAmount(ingredient_id=ingredient['ingredient']['id'],
-                                 recipe=recipe, amount=ingredient['amount'])
-                for ingredient in ingredients
-                ]
-        IngredientAmount.objects.bulk_create(data)
+    def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
+        recipe.tags.set(tags_data)
+        ingredient_amounts = []
+        for item in ingredients_data:
+            ingredient = item.get("ingredient")
+            amount = item.get("amount")
+            ingredient_amount, _ = IngredientAmount.objects.get_or_create(
+                ingredient=ingredient,
+                amount=amount,
+            )
+            ingredient_amounts.append(ingredient_amount)
+        recipe.ingredients.set(ingredient_amounts)
         return recipe
 
     def create(self, validated_data):
-        author = validated_data.get('author')
-        tags_data = validated_data.pop('tags')
-        name = validated_data.get('name')
-        image = validated_data.get('image')
-        text = validated_data.get('text')
-        cooking_time = validated_data.get('cooking_time')
-        ingredients = validated_data.pop('ingredientrecipes')
-        recipe = Recipe.objects.create(
-            author=author,
-            name=name,
-            image=image,
-            text=text,
-            cooking_time=cooking_time,
+        tags_data = validated_data.pop("tags")
+        ingredients_data = validated_data.pop("ingredients")
+        recipe = Recipe.objects.create(**validated_data)
+        return self._add_tags_and_ingredients(
+            recipe, tags_data, ingredients_data
         )
-        recipe = self.add_tags_and_ingredients(tags_data, ingredients, recipe)
-        return recipe
 
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredientrecipes')
-        Tag.objects.filter(recipe=instance).delete()
-        IngredientAmount.objects.filter(recipe=instance).delete()
-        instance = self.add_tags_and_ingredients(
-            tags_data, ingredients, instance)
-        super().update(instance, validated_data)
-        instance.save()
+        tags_data = validated_data.pop("tags")
+        ingredients_data = validated_data.pop("ingredients")
+        instance = super().update(instance, validated_data)
+        instance.ingredients.clear()
+        instance.tags.clear()
+        amounts = self.get_amounts(instance, ingredients_data)
+        IngredientAmount.objects.bulk_create(amounts)
+        tags_data = validated_data.pop("tags")
+        ingredients_data = validated_data.pop("ingredients")
+        tags = []
+        for data in tags_data:
+            tag = get_object_or_404(Tag, id=data.id)
+            tags.append(tag)
+        instance.tags.set(tags)
         return instance
