@@ -2,6 +2,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from users.serializers import CustomUserSerializer
+from rest_framework.serializers import ValidationError
 
 from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
                      ShoppingCart, Tag)
@@ -144,30 +145,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def validate(self, data):
-        if data['cooking_time'] < 1:
-            raise serializers.ValidationError("Время приготовление")
-        if len(data['tags']) == 0:
-            raise serializers.ValidationError(
-                "Должен быть хотя-бы один ингредиент"
-            )
-        if len(data['tags']) > len(set(data['tags'])):
-            raise serializers.ValidationError("Теги должны быть уникальны")
-        if len(data['ingredients']) == 0:
-            raise serializers.ValidationError(
-                "Должен быть хотя-бы один ингредиент"
-            )
-        id_ingredients = []
-        for ingredient in data['ingredients']:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    "оличество ингредиента не может быть меньше 1"
-                )
-            id_ingredients.append(ingredient['id'])
-        if len(id_ingredients) > len(set(id_ingredients)):
-            raise serializers.ValidationError("Только уникальные ингредиенты")
-        return data
-
     def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
         recipe.tags.set(tags_data)
         ingredient_amounts = []
@@ -199,3 +176,32 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return self._add_tags_and_ingredients(
             instance, tags_data, ingredients_data
         )
+
+    def validate(self, data):
+        errors = []
+        if type(data['cooking_time']) is int:
+            if data['cooking_time'] < 1:
+                errors.append('Время приготовления меньше 1')
+        else:
+            errors.append('Время приготовления не является числом')
+
+        tags = self.initial_data.get('tags')
+        uniq_tag = [0]
+        for tag in tags:
+            if uniq_tag[-1] == tag:
+                errors.append('Вы добавили одинаковые теги')
+                break
+            uniq_tag.append(tag)
+
+        ingredients = self.initial_data.get('ingredients')
+        uniq_ingr = [0]
+        for ingredient in ingredients:
+            if int(ingredient['amount']) <= 0:
+                errors.append('Количество ингредиента не может быть меньше 0')
+            if uniq_ingr[-1] == ingredient['id']:
+                errors.append('Вы добавили одинаковые ингредиенты')
+            uniq_ingr.append(ingredient['id'])
+
+        if errors:
+            raise ValidationError(errors)
+        return data
