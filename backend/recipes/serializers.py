@@ -222,19 +222,3 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         instance.tags.set(tags)
 
         return instance
-
-    def get_amounts(self, recipe, ingredients_data):
-        amounts = [
-            IngredientAmount(
-                recipe=recipe,
-                ingredient=get_object_or_404(
-                    Ingredient, id=ingredients_data["id"]
-                ),
-                amount=ingredients_data["amount"],
-            )
-            for ingredients_data in ingredients_data
-        ]
-        return amounts
-
-    def to_representation(self, instance):
-        return RecipeWriteSerializer(instance, context=self.context).data
