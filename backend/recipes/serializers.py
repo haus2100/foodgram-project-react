@@ -144,18 +144,18 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def add_tags_and_ingredients(self, tags_data, ingredients, recipe):
-        for tag_data in tags_data:
-            recipe.tags.add(tag_data)
-        ingredient_list = []
-        for ingredient in ingredients:
-            new_ingredient = IngredientAmount(
-                recipe=recipe,
-                ingredient_id=ingredient['ingredient']['id'],
-                amount=ingredient['amount']
+    def _add_tags_and_ingredients(self, recipe, tags_data, ingredients_data):
+        recipe.tags.set(tags_data)
+        ingredient_amounts = []
+        for item in ingredients_data:
+            ingredient = item.get("ingredient")
+            amount = item.get("amount")
+            ingredient_amount, _ = IngredientAmount.objects.get_or_create(
+                ingredient=ingredient,
+                amount=amount,
             )
-            ingredient_list.append(new_ingredient)
-        IngredientAmount.objects.bulk_create(ingredient_list)
+            ingredient_amounts.append(ingredient_amount)
+        recipe.ingredients.set(ingredient_amounts)
         return recipe
 
     def create(self, validated_data):
