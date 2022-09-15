@@ -191,7 +191,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         IngredientAmount.objects.bulk_create(amounts)
         for data in tags_data:
             tag = get_object_or_404(Tag, id=data.id)
-            recipe.tags.add(tag)
+            recipe.tags.set(tag)
         recipe.save()
         return recipe
 
